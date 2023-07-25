@@ -16,8 +16,8 @@ const pool = new Pool({
 
 
 app.post('/tasks', (req, res) => {
-  const { title, descriptio } = req.body;
-  pool.query('INSERT INTO tasks (title, descriptio) VALUES ($1, $2) RETURNING *', [title, descriptio], (err, result) => {
+  const { title, description } = req.body;
+  pool.query('INSERT INTO tasks (title, description) VALUES ($1, $2) RETURNING *', [title, description], (err, result) => {
     if (err) {
       console.error('Error inserting task:', err);
       res.status(500).json({ message: 'Error inserting task' });
@@ -60,8 +60,8 @@ app.get('/tasks/:id', (req, res) => {
 
 app.put('/tasks/:id', (req, res) => {
   const taskId = req.params.id;
-  const { title, descriptio } = req.body;
-  pool.query('UPDATE tasks SET title = $1, descriptio = $2 WHERE id = $3 RETURNING *', [title, descriptio, taskId], (err, result) => {
+  const { title, description } = req.body;
+  pool.query('UPDATE tasks SET title = $1, description = $2 WHERE id = $3 RETURNING *', [title, description, taskId], (err, result) => {
     if (err) {
       console.error('Error updating task:', err);
       res.status(500).json({ message: 'Error updating task' });
