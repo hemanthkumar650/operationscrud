@@ -1,77 +1,95 @@
 const express = require('express');
-const fs = require('fs');
 const bodyParser = require('body-parser');
-const app = express();
+const { Pool } = require('pg');
 
+const app = express();
 app.use(bodyParser.json());
 
+
+const pool = new Pool({
+  user: 'postgres',
+  host: 'localhost',
+  database: 'postgres',
+  password: 'postgres',
+  port: 5432, 
+});
+
+
 app.post('/tasks', (req, res) => {
-  const tasks = getTasksFromFile();
-  const newTask = {
-    id: generateTaskId(),
-    title: req.body.title,
-    description: req.body.description
-  };
-  tasks.push(newTask);
-  saveTasksToFile(tasks);
-  res.json(newTask);
+  const { title, descriptio } = req.body;
+  pool.query('INSERT INTO tasks (title, descriptio) VALUES ($1, $2) RETURNING *', [title, descriptio], (err, result) => {
+    if (err) {
+      console.error('Error inserting task:', err);
+      res.status(500).json({ message: 'Error inserting task' });
+    } else {
+      const createdTask = result.rows[0];
+      res.json(createdTask);
+    }
+  });
 });
 
-app.put('/tasks/:id', (req, res) => {
-  const tasks = getTasksFromFile();
-  const taskId = req.params.id;
-  const taskToUpdate = tasks.find(task => task.id === taskId);
-  if (!taskToUpdate) {
-    res.status(404).json({ message: 'Task not found' });
-    return;
-  }
-  taskToUpdate.title = req.body.title;
-  taskToUpdate.description = req.body.description;
-  saveTasksToFile(tasks);
-  res.json(taskToUpdate);
-});
-
-app.delete('/tasks/:id', (req, res) => {
-  const tasks = getTasksFromFile();
-  const taskId = req.params.id;
-  const taskIndex = tasks.findIndex(task => task.id === taskId);
-  if (taskIndex === -1) {
-    res.status(404).json({ message: 'Task not found' });
-    return;
-  }
-  const deletedTask = tasks.splice(taskIndex, 1)[0];
-  saveTasksToFile(tasks);
-  res.json({ message: 'Task deleted successfully' });
-});
 
 app.get('/tasks', (req, res) => {
-  const tasks = getTasksFromFile();
-  res.json({ tasks });
+  pool.query('SELECT * FROM tasks', (err, result) => {
+    if (err) {
+      console.error('Error fetching tasks:', err);
+      res.status(500).json({ message: 'Error fetching tasks' });
+    } else {
+      const tasks = result.rows;
+      res.json({ tasks });
+    }
+  });
 });
+
 
 app.get('/tasks/:id', (req, res) => {
-  const tasks = getTasksFromFile();
   const taskId = req.params.id;
-  const task = tasks.find(task => task.id === taskId);
-  if (!task) {
-    res.status(404).json({ message: 'Task not found' });
-    return;
-  }
-  res.json(task);
+  pool.query('SELECT * FROM tasks WHERE id = $1', [taskId], (err, result) => {
+    if (err) {
+      console.error('Error fetching task:', err);
+      res.status(500).json({ message: 'Error fetching task' });
+    } else if (result.rowCount === 0) {
+      res.status(404).json({ message: 'Task not found' });
+    } else {
+      const task = result.rows[0];  
+      res.json(task);
+    }
+  });
 });
-function getTasksFromFile() {
-  const data = fs.readFileSync('tasks.json', 'utf8');
-  return JSON.parse(data);
-}
 
-function saveTasksToFile(tasks) {
-  fs.writeFileSync('tasks.json', JSON.stringify(tasks));
-}
 
-function generateTaskId() {
-  return Date.now().toString();
-}
+app.put('/tasks/:id', (req, res) => {
+  const taskId = req.params.id;
+  const { title, descriptio } = req.body;
+  pool.query('UPDATE tasks SET title = $1, descriptio = $2 WHERE id = $3 RETURNING *', [title, descriptio, taskId], (err, result) => {
+    if (err) {
+      console.error('Error updating task:', err);
+      res.status(500).json({ message: 'Error updating task' });
+    } else if (result.rowCount === 0) {
+      res.status(404).json({ message: 'Task not found' });
+    } else {
+      const updatedTask = result.rows[0];
+      res.json(updatedTask);
+    }
+  });
+});
 
-app.listen(3000, () => {
-  console.log('Server is running on port 3000');
+
+app.delete('/tasks/:id', (req, res) => {
+  const taskId = req.params.id;
+  pool.query('DELETE FROM tasks WHERE id = $1', [taskId], (err, result) => {
+    if (err) {
+      console.error('Error deleting task:', err);
+      res.status(500).json({ message: 'Error deleting task' });
+    } else if (result.rowCount === 0) {
+      res.status(404).json({ message: 'Task not found' });
+    } else {
+      res.json({ message: 'Task deleted successfully' });
+    }
+  });
+});
+
+const PORT = 3000;
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
