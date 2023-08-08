@@ -1,111 +1,167 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const { Pool } = require('pg');
+const pool = require('./db');
+
 const app = express();
 app.use(bodyParser.json());
 
-const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'postgres',
-  password: 'postgres',
-  port: 5432, 
-});
-app.post('/collab_task', (req, res) => {
-  const { id, title, description, assigne, start_date, due_date, status, image_attachment, file_attachment, audio_attachment, date_attachment, time_attachment } = req.body;
-  const validStatusValues = ['DONE', 'IN-PROGRESS', 'ARCHIVED'];
-
-  if (!validStatusValues.includes(status)) {
-    return res.status(400).json({ message: 'Invalid status value' });
+app.post('/create-task', async (req, res) => {
+  const { id,title, description } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO task (id,title, description) VALUES ($1, $2, $3) RETURNING *',
+      [id,title, description]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('An error occurred:', error);
+  res.status(500).json({ error: 'An error occurred' });
   }
+});
 
-  pool.query(
-    'INSERT INTO collab_task (id, title, description, assigne, start_date, due_date, status, image_attachment, file_attachment, audio_attachment, date_attachment, time_attachment) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
-    [id, title, description, assigne, start_date, due_date, status, image_attachment, file_attachment, audio_attachment, date_attachment, time_attachment],
-    (err, result) => {
-      if (err) {
-        console.error('Error inserting task:', err);
-        res.status(500).json({ message: 'Error inserting task' });
-      } else {
-        const createdTask = result.rows[0];
-        res.json(createdTask);
-      }
-    }
-  );
+app.post('/assign-task/:taskId/:userId', async (req, res) => {
+  const taskId = parseInt(req.params.taskId, 10);
+  const userId = parseInt(req.params.userId, 10);
+  try {
+    const result = await pool.query(
+      'UPDATE task SET assigned_to = $1 WHERE id = $2 RETURNING *',
+      [userId, taskId]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('An error occurred:', error);
+    res.status(500).json({ error: 'An error occurred' });
+  }
 });
-app.post('/todo', (req, res) => {
-  const { title, description } = req.body;
-  pool.query('INSERT INTO tasks (title, description ) VALUES ($1, $2) RETURNING *', [title, description], (err, result) => {
-    if (err) {
-      console.error('Error inserting task:', err);
-      res.status(500).json({ message: 'Error inserting task' });
+
+app.put('/update-task/:taskId', async (req, res) => {
+  const { taskId } = req.params;
+  const { title, description, assigned_to, completed } = req.body; 
+  try {
+    let updateFields = [];
+    let queryParams = [taskId];
+
+    if (typeof title !== 'undefined') {
+      updateFields.push('title = $' + (queryParams.length + 1));
+      queryParams.push(title);
+    }
+
+    if (typeof description !== 'undefined') {
+      updateFields.push('description = $' + (queryParams.length + 1));
+      queryParams.push(description);
+    }
+
+    if (typeof assigned_to !== 'undefined') {
+      updateFields.push('assigned_to = $' + (queryParams.length + 1));
+      queryParams.push(assigned_to);
+    }
+
+    if (typeof completed !== 'undefined') {
+      updateFields.push('completed = $' + (queryParams.length + 1));
+      queryParams.push(completed);
+    }
+
+    if (updateFields.length === 0) {
+      res.status(400).json({ error: 'No valid update fields provided' });
+      return;
+    }
+
+    const updateQuery = 'UPDATE task SET ' + updateFields.join(', ') + ' WHERE id = $1 RETURNING *';
+
+    const result = await pool.query(updateQuery, queryParams);
+
+    if (result.rows.length === 0) {
+      res.status(404).json({ error: 'Task not found' });
+      return;
+    }
+
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('An error occurred:', error);
+    res.status(500).json({ error: 'An error occurred' });
+  }
+});
+
+app.put('/complete-task/:taskId', async (req, res) => {
+  const { taskId } = req.params;
+  try {
+    const result = await pool.query(
+      'UPDATE task SET completed = true WHERE id = $1 RETURNING *',
+      [taskId]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('An error occurred:', error);
+  res.status(500).json({ error: 'An error occurred' });
+  }
+});
+
+app.get('/list-tasks', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM task');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('An error occurred:', error);
+  res.status(500).json({ error: 'An error occurred' });
+  }
+});
+
+app.get('/filter-tasks', async (req, res) => {
+  const { completed } = req.query;
+  try {
+    let result;
+
+    if (completed === 'true') {
+      result = await pool.query('SELECT * FROM task WHERE completed = true');
+    } else if (completed === 'false') {
+      result = await pool.query('SELECT * FROM task WHERE completed = false');
     } else {
-      const createdTask = result.rows[0];
-      res.json(createdTask);
+      result = await pool.query('SELECT * FROM task');
     }
-  });
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('An error occurred:', error);
+  res.status(500).json({ error: 'An error occurred' });
+  }
 });
-app.get('/collab_task', (req, res) => {
-  pool.query('SELECT * FROM collab_task', (err, result) => {
-    if (err) {
-      console.error('Error fetching tasks:', err);
-      res.status(500).json({ message: 'Error fetching tasks' });
-    } else {
-      const tasks = result.rows;
-      res.json({ tasks });
-    }
-  });
+
+app.delete('/delete-task/:taskId', async (req, res) => {
+  const { taskId } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM task WHERE id = $1', [taskId]);
+    res.json({ message: 'Task deleted successfully' });
+  } catch (error) {
+    console.error('An error occurred:', error);
+  res.status(500).json({ error: 'An error occurred' });
+  }
 });
-app.get('/collab_task/:id', (req, res) => {
-  const taskId = req.params.id;
-  pool.query('SELECT * FROM collab_task WHERE id = $1', [taskId], (err, result) => {
-    if (err) {
-      console.error('Error fetching task:', err);
-      res.status(500).json({ message: 'Error fetching task' });
-    } else if (result.rowCount === 0) {
-      res.status(404).json({ message: 'Task not found' });
-    } else {
-      const task = result.rows[0];  
-      res.json(task);
-    }
-  });
+
+app.post('/create-user', async (req, res) => {
+  const {id, name, email } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO "user" (id, name, email) VALUES ($1, $2, $3) RETURNING *',
+      [id, name, email]
+    );
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('An error occurred:', error);
+    res.status(500).json({ error: 'An error occurred' });
+  }
 });
-app.put('/collab_task/:id', (req, res) => {
-  const taskId = req.params.id;
-  const { title, description, image_attachment, file_attachment, audio_attachment, date_attachment, time_attachment } = req.body;
-  pool.query(
-    'UPDATE collab_task SET title = $1, description = $2, image_attachment = $3, file_attachment = $4, audio_attachment = $5, date_attachment = $6, time_attachment = $7 WHERE id = $8 RETURNING *',
-    [title, description, image_attachment, file_attachment, audio_attachment, date_attachment, time_attachment, taskId],
-    (err, result) => {
-      if (err) {
-        console.error('Error updating task:', err);
-        res.status(500).json({ message: 'Error updating task' });
-      } else if (result.rowCount === 0) {
-        res.status(404).json({ message: 'Task not found' });
-      } else {
-        const updatedTask = result.rows[0];
-        res.json(updatedTask);
-      }
-    }
-  );
-});
-app.delete('/collab_task/:id', (req, res) => {
-  const taskId = req.params.id;
-  pool.query('DELETE FROM collab_task WHERE id = $1', [taskId], (err, result) => {
-    if (err) {
-      console.error('Error deleting task:', err);
-      res.status(500).json({ message: 'Error deleting task' });
-    } else if (result.rowCount === 0) {
-      res.status(404).json({ message: 'Task not found' });
-    } else {
-      res.json({ message: 'Task deleted successfully' });
-    }
-  });
+
+app.get('/list-users', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM "user"');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('An error occurred:', error);
+    res.status(500).json({ error: 'An error occurred' });
+  }
 });
 
 const PORT = 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-module.exports = app;
-
