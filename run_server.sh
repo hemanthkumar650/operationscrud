@@ -1,25 +1,29 @@
-#!/bin/bash
+BACKUP_DIR="/home/hemanth"
+REPO_DIR="https://github.com/hemanthkumar650/operationscrud.git"
+PG_HOST="127.0.0.1"
+PG_USER="postgres"
+PG_DB="postgres"
 
-BACKUP_DIR=/path/to/backup/directory
-REPO_DIR=/path/to/your/git/repo
 
-cd $BACKUP_DIR
+NEW_BACKUP_FILENAME="backup_$(date +%Y%m%d%H%M%S).sql"
 
-# Create a new backup
-pg_dump -h hostname -U username -d database_name -f new_backup.sql
+pg_dump -h "$PG_HOST" -U "$PG_USER" -d "$PG_DB" -f "$BACKUP_DIR/$NEW_BACKUP_FILENAME"
 
-# Compare with the previous backup
-if ! cmp -s new_backup.sql previous_backup.sql; then
-    # Copy the new backup to the Git repository
-    cp new_backup.sql $REPO_DIR/
+if [ -f "$BACKUP_DIR/previous_backup.sql" ]; then
+    if ! cmp -s "$BACKUP_DIR/$NEW_BACKUP_FILENAME" "$BACKUP_DIR/previous_backup.sql"; then
+    
+        cp "$BACKUP_DIR/$NEW_BACKUP_FILENAME" "$REPO_DIR/"
 
-    cd $REPO_DIR
-    git add .
-    git commit -m "Update database backup"
-    git push origin master
+        cd "$REPO_DIR"
+        git add "$NEW_BACKUP_FILENAME"
+        git commit -m "Update database backup"
+        git push origin master
 
-    # Update the previous backup file
-    cp new_backup.sql previous_backup.sql
+        cp "$BACKUP_DIR/$NEW_BACKUP_FILENAME" "$BACKUP_DIR/previous_backup.sql"
+    else
+        echo "No difference"
+    fi
 else
-    echo "No difference"
+    echo "No previous backup found. Saving the new backup as the previous backup."
+    cp "$BACKUP_DIR/$NEW_BACKUP_FILENAME" "$BACKUP_DIR/previous_backup.sql"
 fi
