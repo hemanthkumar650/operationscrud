@@ -39,10 +39,7 @@ CREATE TABLE public.collab_task (
     description text,
     status text,
     image_attachment text,
-    file_attachment text,
     audio_attachment text,
-    date_attachment date,
-    time_attachment timestamp with time zone,
     username character varying(50)
 );
 
