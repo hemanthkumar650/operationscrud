@@ -5,8 +5,6 @@
 -- Dumped from database version 14.8 (Ubuntu 14.8-0ubuntu0.22.04.1)
 -- Dumped by pg_dump version 15.3 (Ubuntu 15.3-1.pgdg22.04+1)
 
--- Started on 2023-08-21 13:56:52 IST
-
 SET statement_timeout = 0;
 SET lock_timeout = 0;
 SET idle_in_transaction_session_timeout = 0;
@@ -18,13 +16,38 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+--
+-- Name: public; Type: SCHEMA; Schema: -; Owner: postgres
+--
+
+-- *not* creating schema, since initdb creates it
+
+
+ALTER SCHEMA public OWNER TO postgres;
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
 
 --
--- TOC entry 210 (class 1259 OID 16447)
--- Name: task; Type: TABLE; Schema: public; Owner: -
+-- Name: collab_task; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public.collab_task (
+    id integer NOT NULL,
+    title text,
+    description text,
+    status text,
+    image_attachment text,
+    audio_attachment text,
+    username character varying(50)
+);
+
+
+ALTER TABLE public.collab_task OWNER TO postgres;
+
+--
+-- Name: task; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.task (
@@ -36,16 +59,52 @@ CREATE TABLE public.task (
 );
 
 
+ALTER TABLE public.task OWNER TO postgres;
+
 --
--- TOC entry 3210 (class 2606 OID 16453)
--- Name: task task_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+-- Name: user; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."user" (
+    id integer NOT NULL,
+    name text,
+    email text
+);
+
+
+ALTER TABLE public."user" OWNER TO postgres;
+
+--
+-- Name: collab_task collab_task_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public.collab_task
+    ADD CONSTRAINT collab_task_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: task task_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.task
     ADD CONSTRAINT task_pkey PRIMARY KEY (id);
 
 
--- Completed on 2023-08-21 13:56:52 IST
+--
+-- Name: user user_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."user"
+    ADD CONSTRAINT user_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: SCHEMA public; Type: ACL; Schema: -; Owner: postgres
+--
+
+REVOKE USAGE ON SCHEMA public FROM PUBLIC;
+GRANT ALL ON SCHEMA public TO PUBLIC;
+
 
 --
 -- PostgreSQL database dump complete
