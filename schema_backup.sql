@@ -39,8 +39,7 @@ CREATE TABLE public.task (
     description text,
     assigned_to integer,
     completed boolean,
-    user_name text,
-    date text
+    user_name text
 );
 
 
