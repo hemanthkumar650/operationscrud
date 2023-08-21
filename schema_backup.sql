@@ -43,7 +43,6 @@ CREATE TABLE public.collab_task (
     audio_attachment text,
     date_attachment date,
     time_attachment timestamp with time zone,
-    "user" text,
     username character varying(50)
 );
 
@@ -59,7 +58,8 @@ CREATE TABLE public.task (
     title text,
     description text,
     assigned_to integer,
-    completed boolean
+    completed boolean,
+    user_name text
 );
 
 
