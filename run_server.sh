@@ -1,29 +1,28 @@
-BACKUP_DIR="/home/hemanth"
+BACKUP_DIR="/home/hemanth/operationscrud"
 REPO_DIR="https://github.com/hemanthkumar650/operationscrud.git"
 PG_HOST="127.0.0.1"
 PG_USER="postgres"
 PG_DB="postgres"
 
+BACKUP_FILENAME="schema_backup.sql"
 
-NEW_BACKUP_FILENAME="schema_backup_$(date +%Y%m%d%H%M%S).sql"
+TEMP_BACKUP_FILENAME="$BACKUP_DIR/temp_backup.sql"
 
-pg_dump -h "$PG_HOST" -U "$PG_USER" -d "$PG_DB" --schema-only -f "$BACKUP_DIR/$NEW_BACKUP_FILENAME"
+pg_dump -h "$PG_HOST" -U "$PG_USER" -d "$PG_DB" --schema-only -f "$TEMP_BACKUP_FILENAME"
 
-if [ -f "$BACKUP_DIR/previous_schema_backup.sql" ]; then
-    if ! cmp -s "$BACKUP_DIR/$NEW_BACKUP_FILENAME" "$BACKUP_DIR/previous_schema_backup.sql"; then
-    
-        cp "$BACKUP_DIR/$NEW_BACKUP_FILENAME" "$REPO_DIR/"
-
+if [ -f "$BACKUP_DIR/$BACKUP_FILENAME" ]; then
+    if ! cmp -s "$TEMP_BACKUP_FILENAME" "$BACKUP_DIR/$BACKUP_FILENAME"; then
+        cp "$TEMP_BACKUP_FILENAME" "$REPO_DIR/"
         cd "$REPO_DIR"
-        git add "$NEW_BACKUP_FILENAME"
+        git add "$BACKUP_FILENAME"
         git commit -m "Update schema backup"
         git push origin master
-
-        cp "$BACKUP_DIR/$NEW_BACKUP_FILENAME" "$BACKUP_DIR/previous_schema_backup.sql"
+        mv "$TEMP_BACKUP_FILENAME" "$BACKUP_DIR/$BACKUP_FILENAME"
     else
         echo "No difference"
+        rm "$TEMP_BACKUP_FILENAME"
     fi
 else
     echo "No previous schema backup found. Saving the new schema backup as the previous backup."
-    cp "$BACKUP_DIR/$NEW_BACKUP_FILENAME" "$BACKUP_DIR/previous_schema_backup.sql"
+    cp "$TEMP_BACKUP_FILENAME" "$BACKUP_DIR/$BACKUP_FILENAME"
 fi

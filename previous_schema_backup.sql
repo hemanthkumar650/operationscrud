@@ -59,8 +59,7 @@ CREATE TABLE public.task (
     title text,
     description text,
     assigned_to integer,
-    completed boolean,
-    username text
+    completed boolean
 );
 
 
@@ -78,45 +77,6 @@ CREATE TABLE public."user" (
 
 
 ALTER TABLE public."user" OWNER TO postgres;
-
---
--- Data for Name: collab_task; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.collab_task (id, title, description, status, image_attachment, file_attachment, audio_attachment, date_attachment, time_attachment, "user", username) FROM stdin;
-1	Sample Task	This is sample task	IN-PROGRESS	\N	\N	\N	\N	\N	\N	\N
-2	Sample Task	This is sample task	IN-PROGRESS	\N	\N	\N	\N	\N	\N	\N
-3	Sample Task	This is sample task	IN-PROGRESS	\N	\N	\N	\N	\N	\N	\N
-\.
-
-
---
--- Data for Name: task; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public.task (id, title, description, assigned_to, completed, username) FROM stdin;
-3	Sample Task	This is a sample task	\N	\N	\N
-2	Updated Task Title	This task has been updated	\N	t	\N
-1	Sample Task	This is a sample task	2	\N	\N
-5	PK	CURD APIS	\N	\N	\N
-4	MK	\N	\N	\N	\N
-7	pp	UTT	\N	\N	\N
-6	RR	oo	4	t	\N
-\.
-
-
---
--- Data for Name: user; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public."user" (id, name, email) FROM stdin;
-1	hemanth	hemanthk1@gmail.com
-2	hemanth	hemanthk1@gmail.com
-3	UUU	uu@example.com
-4	kkk	kk@example.com
-5	mmm	mm@example.com
-\.
-
 
 --
 -- Name: collab_task collab_task_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
