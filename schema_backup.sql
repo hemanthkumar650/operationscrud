@@ -30,23 +30,6 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: collab_task; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public.collab_task (
-    id integer NOT NULL,
-    title text,
-    description text,
-    status text,
-    image_attachment text,
-    audio_attachment text,
-    username character varying(50)
-);
-
-
-ALTER TABLE public.collab_task OWNER TO postgres;
-
---
 -- Name: task; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -55,8 +38,7 @@ CREATE TABLE public.task (
     title text,
     description text,
     assigned_to integer,
-    completed boolean,
-    user_name text
+    completed boolean
 );
 
 
@@ -74,14 +56,6 @@ CREATE TABLE public."user" (
 
 
 ALTER TABLE public."user" OWNER TO postgres;
-
---
--- Name: collab_task collab_task_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.collab_task
-    ADD CONSTRAINT collab_task_pkey PRIMARY KEY (id);
-
 
 --
 -- Name: task task_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
